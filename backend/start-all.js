@@ -34,6 +34,17 @@ for (const service of services) {
     PORT: String(service.port)
   };
 
+  // Dynamically partition MongoDB database names if MONGODB_URL is provided in environment
+  if (process.env.MONGODB_URL && service.name !== "gateway") {
+    try {
+      const dbUrl = new URL(process.env.MONGODB_URL);
+      dbUrl.pathname = `/${service.name}`;
+      env.MONGODB_URL = dbUrl.toString();
+    } catch (e) {
+      console.warn(`[start-all] Warning: Could not dynamically set MONGODB_URL for ${service.name}:`, e.message);
+    }
+  }
+
   console.log(`Starting ${service.name} on port ${service.port}...`);
 
   // Spawn child node process
