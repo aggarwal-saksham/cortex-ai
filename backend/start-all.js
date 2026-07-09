@@ -22,8 +22,14 @@ const children = [];
 for (const service of services) {
   const servicePath = path.join(__dirname, service.dir);
   
-  // Set up environment variables, inheriting base env and overriding PORT
+  // Set up environment variables with default internal microservice URLs
+  // which can be overridden by environment variables in Render/production
   const env = { 
+    AUTH_SERVICE: "http://localhost:8001",
+    CHAT_SERVICE: "http://localhost:8002",
+    AGENT_SERVICE: "http://localhost:8003",
+    BILLING_SERVICE: "http://localhost:8004",
+    GATEWAY_URL: `http://localhost:${gatewayPort}`,
     ...process.env, 
     PORT: String(service.port) 
   };
