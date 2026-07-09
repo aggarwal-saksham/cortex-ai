@@ -89,6 +89,8 @@ export const login = async (
       60 * 60 * 24 * 7
     );
 
+    const isProd = process.env.NODE_ENV === "production" || (process.env.FRONTEND_URL && !process.env.FRONTEND_URL.includes("localhost"));
+
     res.cookie(
 
       "session",
@@ -98,9 +100,9 @@ export const login = async (
       {
         httpOnly: true,
 
-        secure: false,
+        secure: isProd,
 
-        sameSite: "lax",
+        sameSite: isProd ? "none" : "lax",
 
         maxAge:
           1000 *
@@ -149,12 +151,14 @@ export const logout =
 
       }
 
+      const isProd = process.env.NODE_ENV === "production" || (process.env.FRONTEND_URL && !process.env.FRONTEND_URL.includes("localhost"));
+
       res.clearCookie(
         "session",
         {
           httpOnly: true,
-          secure: false,
-          sameSite: "lax"
+          secure: isProd,
+          sameSite: isProd ? "none" : "lax"
         }
       );
 
