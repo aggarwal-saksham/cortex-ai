@@ -21,13 +21,19 @@ export const chatAgent = async (state) => {
 
   const history = await getMemory(state.conversationId);
 
+  const searchResultsText = typeof state.searchResults === "string"
+    ? state.searchResults
+    : (state.searchResults?.results
+        ? state.searchResults.results.map((r, i) => `[${i + 1}] Title: ${r.title}\nURL: ${r.url}\nContent: ${r.content}`).join("\n\n")
+        : JSON.stringify(state.searchResults, null, 2));
+
   const searchContext = state.searchResults
     ? `
 Web Search Results:
 
-${state.searchResults}
+${searchResultsText}
 
-Answer the user using only the above search results.
+Use the search results to provide a comprehensive, accurate, and up-to-date response. Do not refuse to answer or say you cannot answer if the details can be synthesized from the search results.
 `
     : "";
 
@@ -42,7 +48,8 @@ ${searchContext}
 
 If searchContext exists:
 
-- Use search results to answer.
+- Use the provided search results to answer the question.
+- If the search results do not explicitly contain the answer, you can supplement it using your pre-trained knowledge or inform the user based on the context.
 - Do not mention internal tools.
 
 Rules:
