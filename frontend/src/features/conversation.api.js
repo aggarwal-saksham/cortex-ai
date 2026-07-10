@@ -27,3 +27,8 @@ export const createConversation =async()=>{
  return response.data;
 
 };
+
+export const deleteConversation = async (conversationId) => {
+  const response = await api.delete(`/api/chat/delete-conversation/${conversationId}`);
+  return response.data;
+};

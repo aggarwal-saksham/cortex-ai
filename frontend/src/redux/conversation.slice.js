@@ -55,6 +55,15 @@ setConvTitle:(state,action)=>{
 
  }
 
+},
+deleteConversationFromState:(state,action)=>{
+  const conversationId = action.payload;
+  state.conversations = state.conversations.filter(
+    (conv)=> conv._id !== conversationId
+  );
+  if(state.selectedConversation?._id === conversationId){
+    state.selectedConversation = null;
+  }
 }
 
  
@@ -62,6 +71,6 @@ setConvTitle:(state,action)=>{
 })
 
 // Action creators are generated for each case reducer function
-export const {setConversations,addConversation,setSelectedConversation,setConvTitle} = conversationSlice.actions
+export const {setConversations,addConversation,setSelectedConversation,setConvTitle,deleteConversationFromState} = conversationSlice.actions
 
 export default conversationSlice.reducer

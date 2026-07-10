@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Plus, MessageSquare, Settings, LogOut, User, PenSquare, Menu, X, Coins, ConeIcon, CoinsIcon } from "lucide-react";
+import { Plus, MessageSquare, Settings, LogOut, User, PenSquare, Menu, X, Coins, ConeIcon, CoinsIcon, Trash2 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import api from "../utils/axios";
 import { setUserData } from "../redux/user.slice";
-import { createConversation, getConversations } from "../features/conversation.api";
-import { addConversation, setConversations, setSelectedConversation } from "../redux/conversation.slice";
+import { getConversations, deleteConversation } from "../features/conversation.api";
+import { setConversations, setSelectedConversation, deleteConversationFromState } from "../redux/conversation.slice";
 import { getMessages } from "../features/message.api";
 import { setArtifacts, setMessages } from "../redux/message.slice";
   import BillingDrawer from "./BillingDrawer";
@@ -52,6 +52,23 @@ const [showBilling, setShowBilling] =useState(false);
     const messages = await getMessages(conversation._id);
     dispatch(setMessages(messages));
      dispatch(setArtifacts(messages.artifacts));
+  };
+
+  const handleDeleteConversation = async (e, conversationId) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this conversation?")) return;
+    try {
+      await deleteConversation(conversationId);
+      dispatch(deleteConversationFromState(conversationId));
+      if (selectedConversation?._id === conversationId) {
+        dispatch(setSelectedConversation(null));
+        dispatch(setMessages([]));
+        dispatch(setArtifacts([]));
+      }
+    } catch (error) {
+      console.log(error);
+      alert("Failed to delete conversation");
+    }
   };
 
   const PanelIcon = () => (
@@ -185,18 +202,30 @@ const [showBilling, setShowBilling] =useState(false);
               onClick={() => handleSelectConversation(chat)}
               onMouseEnter={() => setHovered(chat._id)}
               onMouseLeave={() => setHovered(null)}
-              className={`flex items-center gap-2.5 cursor-pointer mb-0.5 px-3 py-2.5 rounded-[10px] border transition-colors duration-150
+              className={`flex items-center justify-between gap-2.5 cursor-pointer mb-0.5 px-3 py-2.5 rounded-[10px] border transition-colors duration-150
                 ${isActive ? "bg-indigo-500/10 border-indigo-500/[0.18]"
                 : isHov   ? "bg-white/[0.05] border-transparent"
                 :            "bg-transparent border-transparent"}`}
             >
-              <div className={`flex items-center justify-center shrink-0 w-[28px] h-[28px] rounded-lg transition-colors duration-150
-                ${isActive ? "bg-indigo-500/15 text-indigo-400" : "bg-white/[0.05] text-slate-500"}`}>
-                <MessageSquare size={13} />
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className={`flex items-center justify-center shrink-0 w-[28px] h-[28px] rounded-lg transition-colors duration-150
+                  ${isActive ? "bg-indigo-500/15 text-indigo-400" : "bg-white/[0.05] text-slate-500"}`}>
+                  <MessageSquare size={13} />
+                </div>
+                <p className={`text-[13px] font-medium truncate ${isActive ? "text-slate-100" : "text-slate-300"} flex-1`}>
+                  {chat.title}
+                </p>
               </div>
-              <p className={`text-[13px] font-medium truncate ${isActive ? "text-slate-100" : "text-slate-300"}`}>
-                {chat.title}
-              </p>
+
+              {isHov && (
+                <button
+                  onClick={(e) => handleDeleteConversation(e, chat._id)}
+                  className="flex items-center justify-center shrink-0 w-6 h-6 rounded-md text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors duration-150 bg-transparent border-none cursor-pointer"
+                  title="Delete chat"
+                >
+                  <Trash2 size={13} />
+                </button>
+              )}
             </div>
           );
         })}
