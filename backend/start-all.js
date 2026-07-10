@@ -31,7 +31,7 @@ for (const service of services) {
     BILLING_SERVICE: "http://localhost:8004",
     GATEWAY_URL: `http://localhost:${gatewayPort}`,
     ...process.env,
-    PORT: String(service.port)
+    PORT: String(service.port),
   };
 
   // Dynamically partition MongoDB database names if MONGODB_URL is provided in environment
@@ -41,7 +41,10 @@ for (const service of services) {
       dbUrl.pathname = `/${service.name}`;
       env.MONGODB_URL = dbUrl.toString();
     } catch (e) {
-      console.warn(`[start-all] Warning: Could not dynamically set MONGODB_URL for ${service.name}:`, e.message);
+      console.warn(
+        `[start-all] Warning: Could not dynamically set MONGODB_URL for ${service.name}:`,
+        e.message,
+      );
     }
   }
 

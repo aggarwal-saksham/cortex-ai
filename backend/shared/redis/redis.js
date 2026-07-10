@@ -8,7 +8,4 @@ redis.on("connect", () => {
   console.log("✅ Redis Connected");
 });
 
-
-
-
 export default redis;

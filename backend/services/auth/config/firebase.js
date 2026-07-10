@@ -8,12 +8,14 @@ const __dirname = path.dirname(__filename);
 
 let serviceAccount;
 
-// 1. Try to load from environment variable (for Render/Production)
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   try {
     serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
   } catch (error) {
-    console.error("❌ Failed to parse FIREBASE_SERVICE_ACCOUNT env variable:", error.message);
+    console.error(
+      "❌ Failed to parse FIREBASE_SERVICE_ACCOUNT env variable:",
+      error.message,
+    );
     process.exit(1);
   }
 } else {
@@ -24,11 +26,16 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
       const raw = fs.readFileSync(localPath, "utf8");
       serviceAccount = JSON.parse(raw);
     } catch (error) {
-      console.error("❌ Failed to parse local serviceAccount.json file:", error.message);
+      console.error(
+        "❌ Failed to parse local serviceAccount.json file:",
+        error.message,
+      );
       process.exit(1);
     }
   } else {
-    console.error("❌ Firebase service account credentials not found in environment or local file!");
+    console.error(
+      "❌ Firebase service account credentials not found in environment or local file!",
+    );
     process.exit(1);
   }
 }

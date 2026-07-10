@@ -1,96 +1,58 @@
 import redis from "../../../shared/redis/redis.js";
 import { graph } from "../graph/supervisor.graph.js";
 import { addMessage } from "../utils/memory.js";
-import axios from "axios"
+import axios from "axios";
 
-export const chat =
-async(req,res,next)=>{
+export const chat = async (req, res, next) => {
+  try {
+    const {
+      prompt,
 
- try{
+      conversationId,
 
-  const {
+      agent,
+    } = req.body;
 
-   prompt,
+    console.log(req.body);
+    console.log(req.file);
 
-   conversationId,
+    await addMessage(conversationId, "user", prompt);
 
-   agent
+    await axios.post(`${process.env.CHAT_SERVICE}/save-message`, {
+      conversationId,
+      role: "user",
+      content: prompt,
+    });
 
-} = req.body;
+    const result = await graph.invoke({
+      prompt,
 
-console.log(req.body)
-console.log(req.file)
+      conversationId,
 
-await addMessage(
- conversationId,
- "user",
- prompt
-);
+      userId: req.headers["x-user-id"],
+      agent,
+      file: req.file,
+    });
 
-await axios.post(`${process.env.CHAT_SERVICE}/save-message`,{
-  conversationId,
-  role:"user",
-  content:prompt
-})
+    console.log("after res", result);
 
+    await addMessage(conversationId, "assistant", result.response);
+    await axios.post(`${process.env.CHAT_SERVICE}/save-message`, {
+      conversationId,
+      role: "assistant",
+      content: result.response,
+      images: result.images,
+      artifacts: result.artifacts || [],
+    });
 
+    return res.json({
+      success: true,
 
-
-
-
-
-  const result =
-  await graph.invoke({
-
-   prompt,
-
-   conversationId,
-
-   userId:
-   req.headers[
-    "x-user-id"
-   ],
-   agent,
-   file:req.file
-
-  });
-
-
-  console.log("after res",result)
-
-  await addMessage(
- conversationId,
- "assistant",
- result.response
-);
-await axios.post(
- `${process.env.CHAT_SERVICE}/save-message`,
- {
-  conversationId,
-  role:"assistant",
-  content:result.response,
-  images:result.images,
-  artifacts:
-  result.artifacts || []
- }
-)
-
-  return res.json({
-
- success:true,
-
- answer:
- result.response,
- images:result.images,
- artifacts:
- result.artifacts || []
-
-});
-
- }catch(error){
-
-  next(error)
-
- }
-
-}
+      answer: result.response,
+      images: result.images,
+      artifacts: result.artifacts || [],
+    });
+  } catch (error) {
+    next(error);
+  }
+};

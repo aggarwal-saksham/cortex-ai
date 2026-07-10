@@ -7,27 +7,17 @@ import { checkAgentLimit } from "../config/agentRateLimit.js";
 import { deductCredits } from "../utils/deductCredits.js";
 
 export const imageAgent = async (state) => {
-
   try {
+    await checkAgentLimit(state.userId, "image");
+    await deductCredits(
+      state.userId,
 
-await checkAgentLimit(
-    state.userId,
-    "image"
-  );
- await deductCredits(
-
-        state.userId,
-
-        "image"
-
+      "image",
     );
 
+    const llm = getModel("image");
 
-    const llm =
-      getModel("image");
-
-    const promptResponse =
-      await llm.invoke(`
+    const promptResponse = await llm.invoke(`
 
 You are an elite AI image prompt engineer.
 
@@ -55,48 +45,28 @@ ${state.prompt}
 
 `);
 
-    const enhancedPrompt =
-      promptResponse.content.trim();
+    const enhancedPrompt = promptResponse.content.trim();
 
-    const imageUrl =
-      `https://image.pollinations.ai/prompt/${encodeURIComponent(
-        enhancedPrompt
-      )}`;
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
+      enhancedPrompt,
+    )}`;
 
-    const imageResponse =
-      await axios.get(
-        imageUrl,
-        {
-          responseType:
-            "arraybuffer"
-        }
-      );
+    const imageResponse = await axios.get(imageUrl, {
+      responseType: "arraybuffer",
+    });
 
-    const imageBuffer =
-      Buffer.from(
-        imageResponse.data
-      );
+    const imageBuffer = Buffer.from(imageResponse.data);
 
-    const fileName =
-      `image-${Date.now()}.png`;
+    const fileName = `image-${Date.now()}.png`;
 
-    await uploadToS3(
-      imageBuffer,
-      fileName,
-      "image/png"
-    );
+    await uploadToS3(imageBuffer, fileName, "image/png");
 
-    const downloadUrl =
-      await getDownloadUrl(
-        fileName,
-        24*60*60
-      );
+    const downloadUrl = await getDownloadUrl(fileName, 24 * 60 * 60);
 
     return {
-
       ...state,
 
-     response: `
+      response: `
 # 🖼️ Image Generated Successfully
 
 ![Generated Image](${downloadUrl})
@@ -104,26 +74,15 @@ ${state.prompt}
 📥 [Download Image](${downloadUrl})
 
 ⏳ Link expires in 10 minutes.
-`
-
+`,
     };
-
   } catch (error) {
-
-    console.log(
-      "Image Agent Error:",
-      error
-    );
+    console.log("Image Agent Error:", error);
 
     return {
-
       ...state,
 
-      response:
-        "❌ Failed to generate image."
-
+      response: "❌ Failed to generate image.",
     };
-
   }
-
 };

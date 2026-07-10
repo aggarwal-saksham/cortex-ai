@@ -5,37 +5,25 @@ import router from "./routes/agent.route.js";
 dotenv.config();
 const app = express();
 app.use(express.json());
-const port=process.env.PORT
+const port = process.env.PORT;
 
-app.use("/",router);
+app.use("/", router);
 
 app.use((err, req, res, next) => {
-
   console.error(err);
 
   if (err.status) {
-
-    return res
-      .status(err.status)
-      .json(err.data);
-
+    return res.status(err.status).json(err.data);
   }
 
-  return res
-    .status(500)
-    .json({
+  return res.status(500).json({
+    success: false,
 
-      success: false,
-
-      message: err.message || "Internal Server Error"
-
-    });
-
+    message: err.message || "Internal Server Error",
+  });
 });
 
 app.listen(port, () => {
-    connectDB()
-  console.log(
-    `agent service running on ${port}`
-  );
+  connectDB();
+  console.log(`agent service running on ${port}`);
 });

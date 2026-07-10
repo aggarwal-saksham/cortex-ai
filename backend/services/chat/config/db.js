@@ -6,7 +6,9 @@ const connectDB = async () => {
     const servers = dns.getServers();
     if (
       servers.length === 0 ||
-      servers.some((s) => s === "127.0.0.1" || s === "127.0.0.1:53" || s === "::1")
+      servers.some(
+        (s) => s === "127.0.0.1" || s === "127.0.0.1:53" || s === "::1",
+      )
     ) {
       dns.setServers(["1.1.1.1", "8.8.8.8"]);
       console.log("Using fallback DNS servers:", dns.getServers());
@@ -22,4 +24,4 @@ const connectDB = async () => {
   }
 };
 
-export default connectDB
+export default connectDB;

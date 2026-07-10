@@ -5,9 +5,7 @@ import crypto from "crypto";
 
 import axios from "axios";
 export const createOrder = async (req, res) => {
-
   try {
-
     const { plan } = req.body;
 
     const userId = req.headers["x-user-id"];
@@ -15,29 +13,22 @@ export const createOrder = async (req, res) => {
     const selectedPlan = PLANS[plan];
 
     if (!selectedPlan) {
-
       return res.status(400).json({
-
         success: false,
 
-        message: "Invalid plan"
-
+        message: "Invalid plan",
       });
-
     }
 
     const order = await razorpay.orders.create({
-
       amount: selectedPlan.amount * 100,
 
       currency: "INR",
 
-      receipt: `receipt_${Date.now()}`
-
+      receipt: `receipt_${Date.now()}`,
     });
 
     await Payment.create({
-
       userId,
 
       orderId: order.id,
@@ -50,153 +41,99 @@ export const createOrder = async (req, res) => {
 
       currency: order.currency,
 
-      status: "created"
-
+      status: "created",
     });
 
     return res.json({
-
       success: true,
 
       order,
 
-      plan: selectedPlan
-
+      plan: selectedPlan,
     });
-
-  }
-
-  catch (error) {
-
+  } catch (error) {
     console.log(error);
 
     return res.status(500).json({
-
       success: false,
 
-      message: error.message
-
+      message: error.message,
     });
-
   }
-
 };
 
-
-
-
 export const verifyPayment = async (req, res) => {
+  try {
+    const {
+      razorpay_order_id,
 
-    try {
+      razorpay_payment_id,
 
-        const {
+      razorpay_signature,
+    } = req.body;
 
-            razorpay_order_id,
+    const generatedSignature = crypto
 
-            razorpay_payment_id,
+      .createHmac(
+        "sha256",
 
-            razorpay_signature
+        process.env.RAZORPAY_KEY_SECRET,
+      )
 
-        } = req.body;
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
 
-        const generatedSignature = crypto
+      .digest("hex");
 
-            .createHmac(
+    if (generatedSignature !== razorpay_signature) {
+      return res.status(400).json({
+        success: false,
 
-                "sha256",
+        message: "Payment verification failed",
+      });
+    }
 
-                process.env.RAZORPAY_KEY_SECRET
+    const payment = await Payment.findOne({
+      orderId: razorpay_order_id,
+    });
 
-            )
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
 
-            .update(
+        message: "Payment not found",
+      });
+    }
 
-                `${razorpay_order_id}|${razorpay_payment_id}`
+    payment.status = "paid";
 
-            )
+    payment.paymentId = razorpay_payment_id;
 
-            .digest("hex");
+    await payment.save();
 
-        if (
+    await axios.patch(
+      `${process.env.AUTH_SERVICE}/internal/update-plan`,
 
-            generatedSignature !==
-
-            razorpay_signature
-
-        ) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message: "Payment verification failed"
-
-            });
-
-        }
-
-        const payment = await Payment.findOne({
-
-            orderId: razorpay_order_id
-
-        });
-
-        if (!payment) {
-
-            return res.status(404).json({
-
-                success: false,
-
-                message: "Payment not found"
-
-            });
-
-        }
-
-        payment.status = "paid";
-
-        payment.paymentId = razorpay_payment_id;
-
-        await payment.save();
-
-        await axios.patch(
-
-    `${process.env.AUTH_SERVICE}/internal/update-plan`,
-
-    {
-
+      {
         userId: payment.userId,
 
         plan: payment.plan,
 
-        credits: payment.credits
+        credits: payment.credits,
+      },
+    );
 
-    }
+    return res.json({
+      success: true,
 
-);
+      message: "Payment verified successfully",
+    });
+  } catch (error) {
+    console.log(error);
 
-        return res.json({
+    return res.status(500).json({
+      success: false,
 
-            success: true,
-
-            message: "Payment verified successfully"
-
-        });
-
-    }
-
-    catch (error) {
-
-        console.log(error);
-
-        return res.status(500).json({
-
-            success: false,
-
-            message: error.message
-
-        });
-
-    }
-
+      message: error.message,
+    });
+  }
 };

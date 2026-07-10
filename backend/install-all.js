@@ -23,7 +23,10 @@ for (const service of services) {
     execSync("npm install", { cwd: servicePath, stdio: "inherit" });
     console.log(`✅ Finished installing dependencies in: ${service}`);
   } catch (error) {
-    console.error(`❌ Failed to install dependencies in ${service}:`, error.message);
+    console.error(
+      `❌ Failed to install dependencies in ${service}:`,
+      error.message,
+    );
     process.exit(1);
   }
 }

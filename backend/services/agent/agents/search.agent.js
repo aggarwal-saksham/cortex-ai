@@ -2,54 +2,32 @@ import { checkAgentLimit } from "../config/agentRateLimit.js";
 import { deductCredits } from "../utils/deductCredits.js";
 import { searchTool } from "../utils/tavily.js";
 
-
-
-export const searchAgent =
-async(state)=>{
-await checkAgentLimit(
-    state.userId,
-    "search"
-  );
+export const searchAgent = async (state) => {
+  await checkAgentLimit(state.userId, "search");
   await deductCredits(
+    state.userId,
 
-        state.userId,
+    "search",
+  );
+  try {
+    const results = await searchTool.invoke({
+      query: state.prompt,
+    });
 
-        "search"
+    console.log(results);
 
-    ); 
- try{
+    return {
+      ...state,
 
-  const results =
-  await searchTool.invoke({
+      searchResults: results,
+    };
+  } catch (error) {
+    console.log(error);
 
- query:state.prompt
+    return {
+      ...state,
 
-} );
-
-console.log(results)
-
-  return {
-
-   ...state,
-
-   searchResults:
-   results,
-   
-
-  };
-
- }catch(error){
-
-  console.log(error);
-
-  return {
-
-   ...state,
-
-   searchResults:[]
-
-  };
-
- }
-
+      searchResults: [],
+    };
+  }
 };

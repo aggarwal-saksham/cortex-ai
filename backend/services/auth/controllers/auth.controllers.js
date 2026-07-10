@@ -1,98 +1,70 @@
 import crypto from "crypto";
 
-import { getAuth }
-  from "firebase-admin/auth";
+import { getAuth } from "firebase-admin/auth";
 import User from "../models/user.model.js";
 import redis from "../../../shared/redis/redis.js";
 import { app } from "../config/firebase.js";
 
-
-export const login = async (
-  req,
-  res
-) => {
-
+export const login = async (req, res) => {
   try {
-
-
     const { token } = req.body;
 
-    const decoded =
-      await getAuth(app)
-        .verifyIdToken(token);
+    const decoded = await getAuth(app).verifyIdToken(token);
 
     console.log(decoded);
 
-
-    let user =
-      await User.findOne({
-        firebaseUid:
-          decoded.uid,
-      });
+    let user = await User.findOne({
+      firebaseUid: decoded.uid,
+    });
 
     if (!user) {
+      user = await User.create({
+        firebaseUid: decoded.uid,
 
-      user =
-        await User.create({
+        email: decoded.email,
 
-          firebaseUid:
-            decoded.uid,
+        name: decoded.name,
 
-          email:
-            decoded.email,
+        avatar: decoded.picture,
 
-          name:
-            decoded.name,
-
-          avatar:
-            decoded.picture,
-
-          provider:
-            decoded.firebase
-              ?.sign_in_provider,
-        });
+        provider: decoded.firebase?.sign_in_provider,
+      });
     }
 
-    const sessionId =
-      crypto.randomUUID();
+    const sessionId = crypto.randomUUID();
 
     await redis.set(
       `user-session:${user._id}`,
       sessionId,
       "EX",
-      60 * 60 * 24 * 7
+      60 * 60 * 24 * 7,
     );
 
     await redis.set(
-
       `session:${sessionId}`,
 
       JSON.stringify({
+        userId: user._id,
 
-        userId:
-          user._id,
-
-        email:
-          user.email,
-        avatar:
-          user.avatar,
+        email: user.email,
+        avatar: user.avatar,
         name: user.name,
         plan: user.plan,
         credits: user.credits,
-        totalCredits: user.totalCredits
-
-
+        totalCredits: user.totalCredits,
       }),
 
       "EX",
 
-      60 * 60 * 24 * 7
+      60 * 60 * 24 * 7,
     );
 
-    const isProd = process.env.NODE_ENV === "production" || (process.env.FRONTEND_URL && !process.env.FRONTEND_URL.includes("localhost"));
+    const isProd =
+      process.env.NODE_ENV === "production" ||
+      (process.env.FRONTEND_URL &&
+        !process.env.FRONTEND_URL.includes("localhost"));
 
     res.cookie(
-
       "session",
 
       sessionId,
@@ -104,117 +76,74 @@ export const login = async (
 
         sameSite: isProd ? "none" : "lax",
 
-        maxAge:
-          1000 *
-          60 *
-          60 *
-          24 *
-          7,
-      }
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+      },
     );
 
     return res.json({
-
       success: true,
 
       user,
     });
-
   } catch (error) {
-
-    return res
-      .status(401)
-      .json({
-        message:
-          error.message,
-      });
-
+    return res.status(401).json({
+      message: error.message,
+    });
   }
-
 };
 
+export const logout = async (req, res) => {
+  try {
+    const sessionId = req.cookies?.session;
 
-
-export const logout =
-  async (req, res) => {
-
-    try {
-
-      const sessionId =
-        req.cookies?.session;
-
-      if (sessionId) {
-
-        await redis.del(
-          `session:${sessionId}`
-        );
-
-      }
-
-      const isProd = process.env.NODE_ENV === "production" || (process.env.FRONTEND_URL && !process.env.FRONTEND_URL.includes("localhost"));
-
-      res.clearCookie(
-        "session",
-        {
-          httpOnly: true,
-          secure: isProd,
-          sameSite: isProd ? "none" : "lax"
-        }
-      );
-
-      return res.status(200).json({
-
-        success: true,
-
-        message: "Logged out successfully"
-
-      });
-
-    } catch (error) {
-
-      return res.status(500).json({
-
-        success: false,
-
-        message: error.message
-
-      });
-
+    if (sessionId) {
+      await redis.del(`session:${sessionId}`);
     }
 
-  };
+    const isProd =
+      process.env.NODE_ENV === "production" ||
+      (process.env.FRONTEND_URL &&
+        !process.env.FRONTEND_URL.includes("localhost"));
 
+    res.clearCookie("session", {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
+    });
 
+    return res.status(200).json({
+      success: true,
+
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+
+      message: error.message,
+    });
+  }
+};
 
 export const updatePlan = async (req, res) => {
-
   try {
-
     const {
-
       userId,
 
       plan,
 
-      credits
-
+      credits,
     } = req.body;
 
     const user = await User.findById(userId);
 
     if (!user) {
-
       return res.status(404).json({
-
         success: false,
 
-        message: "User not found"
-
+        message: "User not found",
       });
-
     }
-
-
 
     user.plan = plan;
 
@@ -222,29 +151,17 @@ export const updatePlan = async (req, res) => {
 
     user.totalCredits += credits;
 
-    user.planExpiresAt = new Date(
-
-      Date.now() +
-
-      30 * 24 * 60 * 60 * 1000
-
-    );
+    user.planExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
     await user.save();
 
-
-    const sessionId = await redis.get(
-      `user-session:${user._id}`
-    );
+    const sessionId = await redis.get(`user-session:${user._id}`);
 
     if (sessionId) {
-
       await redis.set(
-
         `session:${sessionId}`,
 
         JSON.stringify({
-
           userId: user._id,
 
           email: user.email,
@@ -257,166 +174,114 @@ export const updatePlan = async (req, res) => {
 
           credits: user.credits,
 
-          totalCredits: user.totalCredits
-
+          totalCredits: user.totalCredits,
         }),
 
         "EX",
 
-        60 * 60 * 24 * 7
-
+        60 * 60 * 24 * 7,
       );
-
     }
 
     return res.json({
-
-      success: true
-
+      success: true,
     });
-
-  }
-
-  catch (error) {
-
+  } catch (error) {
     console.log(error);
 
     return res.status(500).json({
-
       success: false,
 
-      message: error.message
-
+      message: error.message,
     });
-
   }
-
 };
 
-
-
-
-
 export const deductCredits = async (req, res) => {
+  try {
+    const {
+      userId,
 
-    try {
+      agent,
+    } = req.body;
 
-        const {
+    const COST = {
+      chat: 1,
 
-            userId,
+      search: 5,
 
-            agent
+      coding: 10,
 
-        } = req.body;
+      pdf: 10,
 
-        const COST = {
+      ppt: 10,
 
-             chat:1,
+      image: 10,
+    };
 
-  search:5,
+    const user = await User.findById(userId);
 
-  coding:10,
+    if (!user) {
+      return res.status(404).json({
+        success: false,
 
-  pdf:10,
-
-  ppt:10,
-
-  image:10
-
-        };
-
-        const user = await User.findById(userId);
-
-        if(!user){
-
-            return res.status(404).json({
-
-                success:false,
-
-                message:"User not found"
-
-            });
-
-        }
-
-        const requiredCredits =
-        COST[agent] || 1;
-
-        if(user.credits < requiredCredits){
-
-            return res.status(400).json({
-
-                success:false,
-
-                message:"Not enough credits."
-
-            });
-
-        }
-
-        user.credits -= requiredCredits;
-
-        await user.save();
-
-        const sessionId =
-        await redis.get(
-            `user-session:${user._id}`
-        );
-
-        if(sessionId){
-
-            await redis.set(
-
-                `session:${sessionId}`,
-
-                JSON.stringify({
-
-                    userId:user._id,
-
-                    email:user.email,
-
-                    avatar:user.avatar,
-
-                    name:user.name,
-
-                    plan:user.plan,
-
-                    credits:user.credits,
-
-                    totalCredits:user.totalCredits
-
-                }),
-
-                "EX",
-
-                60*60*24*7
-
-            );
-
-        }
-
-        return res.json({
-
-            success:true,
-
-            credits:user.credits
-
-        });
-
+        message: "User not found",
+      });
     }
 
-    catch(error){
+    const requiredCredits = COST[agent] || 1;
 
-        console.log(error);
-          console.log(error)
-        return res.status(500).json({
+    if (user.credits < requiredCredits) {
+      return res.status(400).json({
+        success: false,
 
-            success:false,
-
-            message:error.message
-
-        });
-
+        message: "Not enough credits.",
+      });
     }
 
+    user.credits -= requiredCredits;
+
+    await user.save();
+
+    const sessionId = await redis.get(`user-session:${user._id}`);
+
+    if (sessionId) {
+      await redis.set(
+        `session:${sessionId}`,
+
+        JSON.stringify({
+          userId: user._id,
+
+          email: user.email,
+
+          avatar: user.avatar,
+
+          name: user.name,
+
+          plan: user.plan,
+
+          credits: user.credits,
+
+          totalCredits: user.totalCredits,
+        }),
+
+        "EX",
+
+        60 * 60 * 24 * 7,
+      );
+    }
+
+    return res.json({
+      success: true,
+
+      credits: user.credits,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+
+      message: error.message,
+    });
+  }
 };

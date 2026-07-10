@@ -6,20 +6,18 @@ import router from "./routes/auth.routes.js";
 dotenv.config();
 const app = express();
 app.use(express.json());
-const port=process.env.PORT 
-
-
+const port = process.env.PORT;
 
 app.get("/", (req, res) => {
   res.status(200).json({
     service: "auth",
-    status: "ok"
+    status: "ok",
   });
 });
-app.use("/",router)
+
+app.use("/", router);
+
 app.listen(port, () => {
-    connectDB()
-  console.log(
-    `auth service running on ${port}`
-  );
+  connectDB();
+  console.log(`auth service running on ${port}`);
 });
