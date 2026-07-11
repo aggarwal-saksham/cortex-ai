@@ -32,6 +32,22 @@ import { getMessages } from "../features/message.api";
 import { setArtifacts, setMessages } from "../redux/message.slice";
 import BillingDrawer from "./BillingDrawer";
 
+const PanelIcon = () => (
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <line x1="9" y1="3" x2="9" y2="21" />
+  </svg>
+);
+
 export default function Sidebar() {
   const [hovered, setHovered] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
@@ -116,24 +132,8 @@ export default function Sidebar() {
     }
   };
 
-  const PanelIcon = () => (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <line x1="9" y1="3" x2="9" y2="21" />
-    </svg>
-  );
-
   /* ── Collapsed rail — desktop only ── */
-  const CollapsedRail = () => (
+  const collapsedRail = (
     <div className="hidden lg:flex flex-col items-center w-[56px] h-screen bg-[#0d0f14] border-r border-white/[0.06] py-4 gap-1 shrink-0">
       <button
         onClick={() => setCollapsed(false)}
@@ -188,7 +188,7 @@ export default function Sidebar() {
   );
 
   /* ── Full sidebar content ── */
-  const SidebarContent = () => (
+  const sidebarContent = (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center gap-2.5 px-4 py-4 border-b border-white/[0.06]">
@@ -380,7 +380,7 @@ export default function Sidebar() {
     </div>
   );
 
-  if (collapsed) return <CollapsedRail />;
+  if (collapsed) return collapsedRail;
 
   return (
     <>
@@ -410,7 +410,7 @@ export default function Sidebar() {
         ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}
       >
-        <SidebarContent />
+        {sidebarContent}
       </div>
 
       <BillingDrawer open={showBilling} onClose={() => setShowBilling(false)} />
