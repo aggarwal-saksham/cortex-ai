@@ -12,6 +12,7 @@ import {
   ConeIcon,
   CoinsIcon,
   Trash2,
+  Edit3,
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import api from "../utils/axios";
@@ -19,11 +20,13 @@ import { setUserData } from "../redux/user.slice";
 import {
   getConversations,
   deleteConversation,
+  updateConversations,
 } from "../features/conversation.api";
 import {
   setConversations,
   setSelectedConversation,
   deleteConversationFromState,
+  setConvTitle,
 } from "../redux/conversation.slice";
 import { getMessages } from "../features/message.api";
 import { setArtifacts, setMessages } from "../redux/message.slice";
@@ -40,6 +43,25 @@ export default function Sidebar() {
   );
   const dispatch = useDispatch();
   const [showBilling, setShowBilling] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editTitleValue, setEditTitleValue] = useState("");
+
+  const handleSaveTitle = async (conversationId) => {
+    const newTitle = editTitleValue.trim();
+    if (!newTitle || newTitle === "") {
+      setEditingId(null);
+      return;
+    }
+    try {
+      await updateConversations(conversationId, newTitle);
+      dispatch(setConvTitle({ conversationId, title: newTitle }));
+      setEditingId(null);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to update chat title");
+    }
+  };
+
   const logout = async () => {
     try {
       await api.get("/api/auth/logout");
@@ -230,10 +252,11 @@ export default function Sidebar() {
         {conversations.map((chat) => {
           const isActive = selectedConversation?._id === chat._id;
           const isHov = hovered === chat._id;
+          const isEditing = editingId === chat._id;
           return (
             <div
               key={chat._id}
-              onClick={() => handleSelectConversation(chat)}
+              onClick={() => !isEditing && handleSelectConversation(chat)}
               onMouseEnter={() => setHovered(chat._id)}
               onMouseLeave={() => setHovered(null)}
               className={`flex items-center justify-between gap-2.5 cursor-pointer mb-0.5 px-3 py-2.5 rounded-[10px] border transition-colors duration-150
@@ -252,21 +275,49 @@ export default function Sidebar() {
                 >
                   <MessageSquare size={13} />
                 </div>
-                <p
-                  className={`text-[13px] font-medium truncate ${isActive ? "text-slate-100" : "text-slate-300"} flex-1`}
-                >
-                  {chat.title}
-                </p>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editTitleValue}
+                    onChange={(e) => setEditTitleValue(e.target.value)}
+                    onBlur={() => handleSaveTitle(chat._id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSaveTitle(chat._id);
+                      if (e.key === "Escape") setEditingId(null);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-white/[0.06] border border-white/10 rounded px-1.5 py-0.5 text-[13px] text-white w-full outline-none focus:border-indigo-500"
+                    autoFocus
+                  />
+                ) : (
+                  <p
+                    className={`text-[13px] font-medium truncate ${isActive ? "text-slate-100" : "text-slate-300"} flex-1`}
+                  >
+                    {chat.title}
+                  </p>
+                )}
               </div>
 
-              {isHov && (
-                <button
-                  onClick={(e) => handleDeleteConversation(e, chat._id)}
-                  className="flex items-center justify-center shrink-0 w-6 h-6 rounded-md text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors duration-150 bg-transparent border-none cursor-pointer"
-                  title="Delete chat"
-                >
-                  <Trash2 size={13} />
-                </button>
+              {!isEditing && isHov && (
+                <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => {
+                      setEditingId(chat._id);
+                      setEditTitleValue(chat.title);
+                    }}
+                    className="flex items-center justify-center w-6 h-6 rounded-md text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors duration-150 bg-transparent border-none cursor-pointer"
+                    title="Edit title"
+                  >
+                    <Edit3 size={12} />
+                  </button>
+                  <button
+                    onClick={(e) => handleDeleteConversation(e, chat._id)}
+                    className="flex items-center justify-center w-6 h-6 rounded-md text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors duration-150 bg-transparent border-none cursor-pointer"
+                    title="Delete chat"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               )}
             </div>
           );

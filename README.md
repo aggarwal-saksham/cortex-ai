@@ -1,6 +1,6 @@
 # CortexAI
 
-CortexAI is a premium, state-of-the-art multi-agent AI platform built using a Node.js microservice architecture on the backend, and a modern React + Tailwind CSS single page application on the frontend. The platform orchestrates complex AI behaviors (such as automated routing, codebase generation, Tavily web searching, file parsing, and PPT/PDF compilation) powered by LangChain and LangGraph.
+CortexAI is a multi-agent AI platform built using a Node.js microservice architecture on the backend, and a modern React + Tailwind CSS single page application on the frontend. The platform orchestrates complex AI behaviors (such as automated routing, codebase generation, Tavily web searching, file parsing, and PPT/PDF compilation) powered by LangChain and LangGraph.
 
 ---
 
