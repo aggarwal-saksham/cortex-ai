@@ -1,5 +1,6 @@
 import Conversation from "../models/conversation.model.js";
 
+// Creates a new blank conversation for the authenticated user
 export const createConversation = async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
@@ -16,6 +17,7 @@ export const createConversation = async (req, res) => {
   }
 };
 
+// Retrieves all conversations for the user sorted by latest updated
 export const getConversations = async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
@@ -35,6 +37,7 @@ export const getConversations = async (req, res) => {
 
 import Message from "../models/message.model.js";
 
+// Saves a new chat message containing optional media/code artifacts
 export const saveMessage = async (req, res) => {
   try {
     const { conversationId, role, content, images, artifacts } = req.body;
@@ -56,6 +59,7 @@ export const saveMessage = async (req, res) => {
   }
 };
 
+// Retrieves all messages associated with a conversation ID
 export const getMessages = async (req, res) => {
   try {
     const messages = await Message.find({
@@ -72,6 +76,7 @@ export const getMessages = async (req, res) => {
   }
 };
 
+// Renames a conversation title
 export const updateConversation = async (req, res) => {
   try {
     const { conversationId, title } = req.body;
@@ -86,6 +91,7 @@ export const updateConversation = async (req, res) => {
   }
 };
 
+// Verifies user ownership and deletes both the conversation and its message logs
 export const deleteConversation = async (req, res) => {
   try {
     const { id } = req.params;

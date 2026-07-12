@@ -1,5 +1,6 @@
 import proxy from "express-http-proxy";
 
+// Decorator that forwards the request to internal microservices with user identity headers
 export const proxyWithUser = (serviceUrl) => {
   return proxy(serviceUrl, {
     proxyReqOptDecorator: (proxyReqOpts, srcReq) => {

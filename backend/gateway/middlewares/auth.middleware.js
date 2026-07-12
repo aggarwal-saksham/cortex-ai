@@ -1,5 +1,6 @@
 import redis from "../../shared/redis/redis.js";
 
+// Middleware to verify session cookies and authenticate requests
 export const protect = async (req, res, next) => {
   try {
     const sessionId = req?.cookies?.session;
@@ -10,6 +11,7 @@ export const protect = async (req, res, next) => {
       });
     }
 
+    // Look up the active session in Redis cache
     const session = await redis.get(`session:${sessionId}`);
 
     if (!session) {

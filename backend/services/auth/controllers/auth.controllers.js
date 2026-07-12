@@ -5,14 +5,17 @@ import User from "../models/user.model.js";
 import redis from "../../../shared/redis/redis.js";
 import { app } from "../config/firebase.js";
 
+// Authenticates users using a Firebase ID token and starts a Redis-backed session
 export const login = async (req, res) => {
   try {
     const { token } = req.body;
 
+    // Verify the client's Firebase token
     const decoded = await getAuth(app).verifyIdToken(token);
 
     console.log(decoded);
 
+    // Find the user in the database or create a new profile
     let user = await User.findOne({
       firebaseUid: decoded.uid,
     });
@@ -33,6 +36,7 @@ export const login = async (req, res) => {
 
     const sessionId = crypto.randomUUID();
 
+    // Map user ID to active session ID in Redis
     await redis.set(
       `user-session:${user._id}`,
       sessionId,
@@ -40,6 +44,7 @@ export const login = async (req, res) => {
       60 * 60 * 24 * 7,
     );
 
+    // Cache the user's session profile in Redis
     await redis.set(
       `session:${sessionId}`,
 
@@ -64,6 +69,7 @@ export const login = async (req, res) => {
       (process.env.FRONTEND_URL &&
         !process.env.FRONTEND_URL.includes("localhost"));
 
+    // Set the HTTP-only cookie containing the session ID
     res.cookie(
       "session",
 
@@ -92,6 +98,7 @@ export const login = async (req, res) => {
   }
 };
 
+// Deletes the user session from Redis and clears the browser cookie
 export const logout = async (req, res) => {
   try {
     const sessionId = req.cookies?.session;
@@ -125,6 +132,7 @@ export const logout = async (req, res) => {
   }
 };
 
+// Updates the user subscription plan and refreshes their session cache
 export const updatePlan = async (req, res) => {
   try {
     const {
@@ -157,6 +165,7 @@ export const updatePlan = async (req, res) => {
 
     const sessionId = await redis.get(`user-session:${user._id}`);
 
+    // Update active Redis session if the user is currently logged in
     if (sessionId) {
       await redis.set(
         `session:${sessionId}`,
@@ -197,6 +206,7 @@ export const updatePlan = async (req, res) => {
   }
 };
 
+// Deducts credits from the user account based on the requested agent type
 export const deductCredits = async (req, res) => {
   try {
     const {
@@ -205,6 +215,7 @@ export const deductCredits = async (req, res) => {
       agent,
     } = req.body;
 
+    // Credit cost definitions per agent invocation
     const COST = {
       chat: 1,
 
@@ -231,6 +242,7 @@ export const deductCredits = async (req, res) => {
 
     const requiredCredits = COST[agent] || 1;
 
+    // Verify user has sufficient credit balance
     if (user.credits < requiredCredits) {
       return res.status(400).json({
         success: false,
@@ -245,6 +257,7 @@ export const deductCredits = async (req, res) => {
 
     const sessionId = await redis.get(`user-session:${user._id}`);
 
+    // Update the active Redis session cache with the new credit balance
     if (sessionId) {
       await redis.set(
         `session:${sessionId}`,

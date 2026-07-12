@@ -16,8 +16,10 @@ import { imageAgent } from "../agents/imageGen.agent.js";
 import { visionAgent } from "../agents/vision.agent.js";
 import { pdfRagAgent } from "../agents/pdfRag.agent.js";
 
+// Initialize a state graph utilizing our custom agent state schema
 const workflow = new StateGraph(AgentState);
 
+// Define the functional nodes in the routing workflow
 workflow.addNode("router", routerNode);
 
 workflow.addNode("chat", chatAgent);
@@ -31,8 +33,11 @@ workflow.addNode("ppt", pptAgent);
 workflow.addNode("image", imageAgent);
 workflow.addNode("vision", visionAgent);
 workflow.addNode("pdf_rag", pdfRagAgent);
+
+// Point the starting edge to the router node
 workflow.addEdge("__start__", "router");
 
+// Route query execution dynamically from the router to the matched agent node
 workflow.addConditionalEdges(
   "router",
 
@@ -78,9 +83,11 @@ workflow.addConditionalEdges(
   },
 );
 
+// End states for specialized creation/generation pipelines
 workflow.addEdge("coding", "__end__");
 workflow.addEdge("image", "__end__");
 
+// Route web search results back to the chat agent to compose the final response
 workflow.addEdge("search", "chat");
 
 workflow.addEdge("pdf", "__end__");
@@ -92,4 +99,5 @@ workflow.addEdge("vision", "__end__");
 
 workflow.addEdge("pdf_rag", "__end__");
 
+// Compile the state graph workflow into an executable LangGraph instance
 export const graph = workflow.compile();

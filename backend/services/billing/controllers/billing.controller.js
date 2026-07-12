@@ -4,6 +4,8 @@ import Payment from "../models/payment.model.js";
 import crypto from "crypto";
 
 import axios from "axios";
+
+// Creates a Razorpay order and logs the pending payment record in the database
 export const createOrder = async (req, res) => {
   try {
     const { plan } = req.body;
@@ -20,14 +22,16 @@ export const createOrder = async (req, res) => {
       });
     }
 
+    // Call Razorpay API to generate a unique order
     const order = await razorpay.orders.create({
-      amount: selectedPlan.amount * 100,
+      amount: selectedPlan.amount * 100, // Razorpay processes amounts in paisa (sub-units)
 
       currency: "INR",
 
       receipt: `receipt_${Date.now()}`,
     });
 
+    // Create a pending payment log in MongoDB
     await Payment.create({
       userId,
 
@@ -62,6 +66,7 @@ export const createOrder = async (req, res) => {
   }
 };
 
+// Verifies the signature sent by Razorpay and increments user plan/credits on success
 export const verifyPayment = async (req, res) => {
   try {
     const {
@@ -72,6 +77,7 @@ export const verifyPayment = async (req, res) => {
       razorpay_signature,
     } = req.body;
 
+    // Verify signature using HMAC SHA256 encryption
     const generatedSignature = crypto
 
       .createHmac(
@@ -110,6 +116,7 @@ export const verifyPayment = async (req, res) => {
 
     await payment.save();
 
+    // Call the Auth microservice internally to update user plan and add credits
     await axios.patch(
       `${process.env.AUTH_SERVICE}/internal/update-plan`,
 

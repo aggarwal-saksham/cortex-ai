@@ -1,6 +1,8 @@
 import { getModel } from "../utils/model.js";
 
+// Determines the best specialized agent to handle the user's request
 export const routerNode = async (state) => {
+  // If the user manually selected an agent, respect that choice
   if (state.agent && state.agent !== "auto") {
     return {
       ...state,
@@ -9,6 +11,7 @@ export const routerNode = async (state) => {
     };
   }
 
+  // If a file is uploaded, route it based on the file type
   if (state.file) {
     if (state.file.mimetype.startsWith("image/")) {
       return {
@@ -29,6 +32,7 @@ export const routerNode = async (state) => {
     }
   }
 
+  // Fallback to calling a routing LLM to classify the text prompt
   const llm = getModel("router");
 
   const result = await llm.invoke(`
