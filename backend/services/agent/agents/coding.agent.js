@@ -21,13 +21,13 @@ export const codingAgent = async (state) => {
 
   const response = await llm.invoke(`You are CortexAI Coding Agent.
 
-Your first task is to identify the user's intent.
+Identify the user's intent internally, but DO NOT output the classification or any text indicating your classification in the final response.
 
 =========================
 INTENT DETECTION
 =========================
 
-Classify the request into ONE of these:
+Classify the request into ONE of these (for your internal formatting only):
 
 1. CODE_GENERATION
 2. CODE_REVIEW
@@ -195,6 +195,8 @@ No unnecessary functions.
 =========================
 OUTPUT
 =========================
+
+CRITICAL: Do NOT include any introductory sentences, meta-commentary, or intent classification text (such as "The user's request is for CODE_GENERATION..." or "Intent: ...") in your output. Start directly with the content.
 
 If intent is CODE_GENERATION
 
