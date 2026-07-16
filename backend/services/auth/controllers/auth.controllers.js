@@ -64,10 +64,11 @@ export const login = async (req, res) => {
       60 * 60 * 24 * 7,
     );
 
-    const isProd =
-      process.env.NODE_ENV === "production" ||
+    const isSecureRequest =
+      req.secure ||
+      req.headers["x-forwarded-proto"] === "https" ||
       (process.env.FRONTEND_URL &&
-        !process.env.FRONTEND_URL.includes("localhost"));
+        process.env.FRONTEND_URL.startsWith("https://"));
 
     // Set the HTTP-only cookie containing the session ID
     res.cookie(
@@ -78,9 +79,9 @@ export const login = async (req, res) => {
       {
         httpOnly: true,
 
-        secure: isProd,
+        secure: isSecureRequest,
 
-        sameSite: isProd ? "none" : "lax",
+        sameSite: isSecureRequest ? "none" : "lax",
 
         maxAge: 1000 * 60 * 60 * 24 * 7,
       },
@@ -107,15 +108,16 @@ export const logout = async (req, res) => {
       await redis.del(`session:${sessionId}`);
     }
 
-    const isProd =
-      process.env.NODE_ENV === "production" ||
+    const isSecureRequest =
+      req.secure ||
+      req.headers["x-forwarded-proto"] === "https" ||
       (process.env.FRONTEND_URL &&
-        !process.env.FRONTEND_URL.includes("localhost"));
+        process.env.FRONTEND_URL.startsWith("https://"));
 
     res.clearCookie("session", {
       httpOnly: true,
-      secure: isProd,
-      sameSite: isProd ? "none" : "lax",
+      secure: isSecureRequest,
+      sameSite: isSecureRequest ? "none" : "lax",
     });
 
     return res.status(200).json({
