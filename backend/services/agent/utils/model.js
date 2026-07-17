@@ -14,6 +14,7 @@ const openRouter = new ChatOpenRouter({
 export const gemini = new ChatGoogleGenerativeAI({
   model: "gemini-3.5-flash",
   apiKey: process.env.GOOGLE_API_KEY,
+  maxRetries: 2,
 });
 
 const groq = new ChatGroq({
