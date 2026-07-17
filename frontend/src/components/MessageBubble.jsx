@@ -1,12 +1,12 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { FiExternalLink, FiX } from "react-icons/fi";
+import { FiExternalLink, FiX, FiFileText } from "react-icons/fi";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Copy, Check } from "lucide-react";
 
-function MessageBubble({ role, content, images }) {
+function MessageBubble({ role, content, images, files = [] }) {
   const isUser = role === "user";
   const [lightboxSrc, setLightboxSrc] = useState(null);
   const [copiedCode, setCopiedCode] = useState("");
@@ -37,6 +37,36 @@ function MessageBubble({ role, content, images }) {
             : " text-slate-200 rounded-tl-sm"
         }`}
       >
+        {files && files.length > 0 && (
+          <div className="flex flex-wrap gap-2.5 mb-2.5">
+            {files.map((file, idx) => {
+              const isImage = file.type?.startsWith("image/");
+              if (isImage) {
+                return (
+                  <img
+                    key={idx}
+                    src={file.url}
+                    alt={file.name}
+                    className="w-24 h-16 rounded-lg object-cover border border-white/10"
+                  />
+                );
+              } else {
+                return (
+                  <a
+                    key={idx}
+                    href={file.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/10 border border-white/10 text-xs text-slate-200 hover:bg-white/20 transition-colors"
+                  >
+                    <FiFileText size={14} className="text-red-400 shrink-0" />
+                    <span className="truncate max-w-[120px]">{file.name}</span>
+                  </a>
+                );
+              }
+            })}
+          </div>
+        )}
         {images.length > 0 && (
           <div className="flex flex-wrap gap-3 mt-4">
             {images.map((img, i) => (

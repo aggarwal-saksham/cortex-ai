@@ -183,7 +183,16 @@ export default function ChatInput({ setBanner }) {
         );
       }
 
-      dispatch(addMessage({ role: "user", content: prompt }));
+      const userFiles = [];
+      if (selectedFile) {
+        userFiles.push({
+          url: URL.createObjectURL(selectedFile),
+          name: selectedFile.name,
+          type: selectedFile.type,
+        });
+      }
+
+      dispatch(addMessage({ role: "user", content: prompt, files: userFiles }));
       setValue("");
 
       const formData = new FormData();

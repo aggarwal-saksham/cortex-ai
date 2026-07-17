@@ -155,6 +155,7 @@ export default function MessageList() {
                 role={msg.role}
                 content={msg.content}
                 images={msg?.images || []}
+                files={msg?.files || []}
               />
             </motion.div>
           ))}
