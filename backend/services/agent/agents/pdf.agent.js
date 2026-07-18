@@ -129,6 +129,7 @@ Rules:
 `.trim(),
     };
   } catch (error) {
+    if (error.status === 429) throw error;
     console.log("PDF Agent Error:", error);
 
     return {

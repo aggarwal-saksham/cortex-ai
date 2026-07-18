@@ -476,6 +476,7 @@ Title: Conclusion
 `,
     };
   } catch (error) {
+    if (error.status === 429) throw error;
     console.log("PPT Agent Error:", error);
     return { ...state, response: "Failed to generate presentation." };
   }

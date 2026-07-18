@@ -77,7 +77,8 @@ ${state.prompt}
 `,
     };
   } catch (error) {
-    console.log("Image Agent Error:", error);
+    if (error.status === 429) throw error;
+    console.log("Image Gen Agent Error:", error);
 
     return {
       ...state,

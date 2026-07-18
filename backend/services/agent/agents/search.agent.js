@@ -22,7 +22,8 @@ export const searchAgent = async (state) => {
       searchResults: results,
     };
   } catch (error) {
-    console.log(error);
+    if (error.status === 429) throw error;
+    console.log("Search Agent Error:", error);
 
     return {
       ...state,
