@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { FaGoogle } from "react-icons/fa";
 import ArtifactPanel from "../components/ArtifactPanel";
@@ -11,19 +12,36 @@ import { auth, googleProvider } from "../../firebase";
 function Home() {
   const { userData } = useSelector((state) => state.user);
   const dispatch = useDispatch();
-  const login = async (token) => {
+  const [loadingText, setLoadingText] = useState("");
+
+  const login = async (token, retries = 5) => {
     try {
       const { data } = await api.post(`/api/auth/login`, { token });
       dispatch(setUserData(data.user));
     } catch (error) {
-      console.log(error);
+      if (retries > 0) {
+        console.log("Server cold start, retrying in 10s...");
+        setLoadingText("Waking up server... (~40s)");
+        // Wait 10 seconds and try again automatically
+        setTimeout(() => login(token, retries - 1), 10000);
+      } else {
+        setLoadingText("Connection failed. Please refresh.");
+        console.error("Login failed after multiple retries", error);
+      }
     }
   };
-  const handleGoogleLogin = async () => {
-    const result = await signInWithPopup(auth, googleProvider);
 
-    const token = await result.user.getIdToken();
-    await login(token);
+  const handleGoogleLogin = async () => {
+    if (loadingText) return; // Prevent spam clicking
+    try {
+      setLoadingText("Authenticating...");
+      const result = await signInWithPopup(auth, googleProvider);
+      const token = await result.user.getIdToken();
+      await login(token);
+    } catch (error) {
+      console.error("Google sign in error", error);
+      setLoadingText("");
+    }
   };
 
   return (
@@ -46,10 +64,11 @@ function Home() {
 
             <button
               onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center gap-3 py-[11px] rounded-xl text-sm font-medium text-white bg-gradient-to-br from-indigo-500 to-violet-700 hover:from-indigo-400 hover:to-violet-600 active:from-indigo-600 active:to-violet-800 border border-indigo-500/30 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all duration-150 cursor-pointer"
+              disabled={!!loadingText}
+              className={`w-full flex items-center justify-center gap-3 py-[11px] rounded-xl text-sm font-medium text-white bg-gradient-to-br from-indigo-500 to-violet-700 hover:from-indigo-400 hover:to-violet-600 active:from-indigo-600 active:to-violet-800 border border-indigo-500/30 shadow-lg shadow-indigo-500/20 transition-all duration-150 ${loadingText ? "opacity-70 cursor-not-allowed" : "hover:shadow-indigo-500/30 cursor-pointer"}`}
             >
-              <FaGoogle size={15} className="text-white" />
-              Continue with Google
+              {!loadingText && <FaGoogle size={15} className="text-white" />}
+              {loadingText ? loadingText : "Continue with Google"}
             </button>
           </div>
         </div>
